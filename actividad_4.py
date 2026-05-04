@@ -1,6 +1,43 @@
 import os
-os.environ['TCL_LIBRARY'] = r'C:\Python313\tcl\tcl8.6'
-os.environ['TK_LIBRARY'] = r'C:\Python313\tcl\tk8.6'
+import sys
+from pathlib import Path
+
+
+def configure_tcl_tk():
+    """Resolve Tcl/Tk paths from the active Python installation.
+
+    The previous hardcoded Windows paths broke whenever Python was installed in
+    a different location or version (for example, Python 3.14 instead of 3.13).
+    We now look for a valid Tcl/Tk installation next to the running interpreter
+    and only set the environment variables when the directories exist.
+    """
+
+    tcl_env = os.environ.get("TCL_LIBRARY")
+    tk_env = os.environ.get("TK_LIBRARY")
+    if tcl_env and tk_env:
+        if Path(tcl_env, "init.tcl").exists() and Path(tk_env, "tk.tcl").exists():
+            return
+
+    prefixes = [sys.base_prefix, sys.prefix, Path(sys.executable).resolve().parent]
+    seen = set()
+
+    for prefix in prefixes:
+        if not prefix:
+            continue
+        base = Path(prefix)
+        for candidate in (base / "tcl", base / "Lib" / "tcl8.6"):
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            tcl_dir = candidate / "tcl8.6"
+            tk_dir = candidate / "tk8.6"
+            if (tcl_dir / "init.tcl").exists() and (tk_dir / "tk.tcl").exists():
+                os.environ["TCL_LIBRARY"] = str(tcl_dir)
+                os.environ["TK_LIBRARY"] = str(tk_dir)
+                return
+
+
+configure_tcl_tk()
 
 import tkinter as tk
 import eGela
