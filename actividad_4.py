@@ -1,3 +1,8 @@
+import tkinter as tk
+import eGela
+import Dropbox
+import helper
+import time
 import os
 import sys
 from pathlib import Path
@@ -38,12 +43,6 @@ def configure_tcl_tk():
 
 
 configure_tcl_tk()
-
-import tkinter as tk
-import eGela
-import Dropbox
-import helper
-import time
 
 ##########################################################################################################
 

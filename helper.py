@@ -24,35 +24,34 @@ def progress(tipo, title):
     popup.title(title)
     popup.iconbitmap('./favicon.ico')
     center(popup)
-
     label = tk.Label(popup, text=title)
     label.grid(row=0, column=0)
     label.pack(side=tk.TOP)
 
     progress_var = tk.DoubleVar()
-    progress_bar = ttk.Progressbar(popup, length=200, variable=progress_var, maximum=100)
-#    progress_bar.grid(row=1, column=0)
+    progress_bar = ttk.Progressbar(popup, variable=progress_var, maximum=100)
+    #progress_bar.grid(row=1, column=0)
     progress_bar.pack(side=tk.TOP)
 
     return popup, progress_var, progress_bar
 
-def update_listbox2(msg_listbox, path, edukia_json_entries):
+def update_listbox2(msg_listbox, path, edukia_json):
     msg_listbox = msg_listbox
     msg_listbox.delete(0, tk.END)
 
     files = []
     if path != '/':
         files.append({'id': 'parent',
-                      'name': "..",
-                      '.tag': "folder"})
+                            'name': "..",
+                            '.tag': "folder"})
         msg_listbox.insert(tk.END, "..")
-        msg_listbox.itemconfigure(tk.END, background="red")
-    for each in edukia_json_entries:
+        msg_listbox.itemconfigure(tk.END, background="#C6185C")
+
+    for each in edukia_json['entries']:
         msg_listbox.insert(tk.END, each['name'])
         if each['.tag'] == "folder":
-            msg_listbox.itemconfigure(tk.END, background="green")
+            msg_listbox.itemconfigure(tk.END, background="#7C86FF")
         files.append({'id': each['id'],
-                      'name': each['name'],
-                      '.tag': each['.tag']})
-
+                            'name': each['name'],
+                            '.tag': each['.tag']})
     return files
