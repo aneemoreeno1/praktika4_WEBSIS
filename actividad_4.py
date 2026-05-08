@@ -1,22 +1,16 @@
 import tkinter as tk
+import os
 import eGela
 import Dropbox
 import helper
 import time
-import os
+from urllib.parse import unquote
 import sys
 from pathlib import Path
 
+##########################################################################################################
 
 def configure_tcl_tk():
-    """Resolve Tcl/Tk paths from the active Python installation.
-
-    The previous hardcoded Windows paths broke whenever Python was installed in
-    a different location or version (for example, Python 3.14 instead of 3.13).
-    We now look for a valid Tcl/Tk installation next to the running interpreter
-    and only set the environment variables when the directories exist.
-    """
-
     tcl_env = os.environ.get("TCL_LIBRARY")
     tk_env = os.environ.get("TK_LIBRARY")
     if tcl_env and tk_env:
@@ -76,7 +70,9 @@ def transfer_files():
         newroot.update()
 
         if dropbox._path == "/":
-            path = "/" + pdf_name
+            path = "/" + unquote(pdf_name)
+            print ("----------------------: "+ pdf_name)
+            print("----------------------: " + unquote(pdf_name))
         else:
             path = dropbox._path + "/" + pdf_name
         dropbox.transfer_file(path, pdf_file)
@@ -104,14 +100,12 @@ def delete_files():
             path = "/" + dropbox._files[each]['name']
         else:
             path = dropbox._path + "/" + dropbox._files[each]['name']
+            print (path)
         dropbox.delete_file(path)
 
         progress += progress_step
         progress_var.set(progress)
         progress_bar.update()
-        newroot.update()
-
-        time.sleep(0.1)
 
     popup.destroy()
     dropbox.list_folder(msg_listbox2)
@@ -145,6 +139,7 @@ def create_folder():
     send_button.pack(side=tk.TOP)
     dropbox._root = popup
 
+##########################################################################################################
 def download_files():
     for each in selected_items2:
         selected_file = dropbox._files[each]
@@ -180,12 +175,14 @@ def rename_file():
 
 def check_credentials(event= None):
     egela.check_credentials(username.get(), password.get())
+    #Prueba para ver si se ha quitado el bug
+    print(username)
 
 def on_selecting1(event):
     global selected_items1
     widget = event.widget
     selected_items1 = widget.curselection()
-    print(selected_items1)
+    print (selected_items1)
 
 def on_selecting2(event):
     global selected_items2
@@ -235,6 +232,7 @@ if not egela._login:
 # eGela-ko PDF-etako erreferentziak hartu
 pdfs = egela.get_pdf_refs()
 
+##########################################################################################################
 # Login Dropbox
 root = tk.Tk()
 root.geometry('250x100')
@@ -259,8 +257,8 @@ root.mainloop()
 
 newroot = tk.Tk()
 newroot.geometry("850x400")
-newroot.iconbitmap('./favicon.ico')
-newroot.title("eGela -> Dropbox")
+newroot.iconbitmap('./favicon.ico') #
+newroot.title("eGela -> Dropbox") #
 helper.center(newroot)
 
 newroot.rowconfigure(0, weight=1)
@@ -270,61 +268,55 @@ newroot.columnconfigure(1, weight=1)
 newroot.columnconfigure(2, weight=6)
 newroot.columnconfigure(3, weight=1)
 
-# PDF-zerrendaren etiketa(0,0)   #
-var = tk.StringVar()
-var.set("PDF-ak Web Sistemak ikastaroan")
-label = tk.Label(newroot, textvariable=var)
-label.grid(column=0, row=0, ipadx=5, ipady=5)
-
-# Dropbox fitxategien zerrendaren etiketa (0,2)
+# Etigueta PDFs en Sistemas Web (0,0)   #
 var2 = tk.StringVar()
-var2.set("Dropbox path: " + dropbox._path)
+var2.set("PDFs en Sistemas Web")
 label2 = tk.Label(newroot, textvariable=var2)
-label2.grid(row=0, column=2, ipadx=5, ipady=5)
+label2.grid(column=0, row=0, ipadx=5, ipady=5)
 
-# PDF-en zerrenda duen Frame-a(1,0)
+# Etigueta del directorio de Dropbox (0,2)
+var = tk.StringVar()
+var.set(dropbox._path)
+label = tk.Label(newroot, textvariable=var)
+label.grid( row=0, column=2, ipadx=5, ipady=5)
+
+# Frame con lista de PDFs e eGela (1,0)
 selected_items1 = None
 messages_frame1 = tk.Frame(newroot)
 msg_listbox1 = make_listbox(messages_frame1)
 msg_listbox1.bind('<<ListboxSelect>>', on_selecting1)
 msg_listbox1.pack(side=tk.LEFT, fill=tk.BOTH)
 #messages_frame1.pack()
-messages_frame1.grid(row=1, column=0, ipadx=10, ipady=2, padx=2, pady=2)
+messages_frame1.grid(row=1, column=0, ipadx=10, ipady=10, padx=2, pady=2) #
 
-# Frame >>> botoiarekin (1,1)
+# Frame con boton >>> (1,1)
 frame1 = tk.Frame(newroot)
 button1 = tk.Button(frame1, borderwidth=4, text=">>>", width=10, pady=8, command=transfer_files)
 button1.pack()
 frame1.grid(row=1, column=1, ipadx=5, ipady=5)
 
-# Dropbox fitxategien zerrenda duen Frame-a (1,2)
+# Frame con ficheros en Dropbox (1,2)
 selected_items2 = None
 messages_frame2 = tk.Frame(newroot)
 msg_listbox2 = make_listbox(messages_frame2)
 msg_listbox2.bind('<<ListboxSelect>>', on_selecting2)
 msg_listbox2.bind('<Double-Button-1>', on_double_clicking2)
 msg_listbox2.pack(side=tk.RIGHT, fill=tk.BOTH)
-#messages_frame2.pack()
-messages_frame2.grid(row=1, column=2, ipadx=10, ipady=2, padx=2, pady=2)
 
-# Sortu eta ezabatu botoia duen Frame-a  (1,3)
+#messages_frame2.pack()
+messages_frame2.grid(row=1, column=2, ipadx=10, ipady=10, padx=2, pady=2)
+
+# Frame con botones Create y Delete (1,3)
+
 frame2 = tk.Frame(newroot)
-button2 = tk.Button(frame2, borderwidth=4, background="blue", text="Delete", width=10, pady=8, command=delete_files)
+button2 = tk.Button(frame2, borderwidth=4,  background="#C6185C",fg="white", text="Delete", width=10, pady=8, command=delete_files)
 button2.pack(padx=2, pady=2)
-button3 = tk.Button(frame2, borderwidth=4, text="Create folder", width=10, pady=8, command=create_folder)
+button3 = tk.Button(frame2, borderwidth=4, background="#7C86FF",fg="white", text="Create folder", width=10, pady=8, command=create_folder)
 button3.pack(padx=2, pady=2)
-button4 = tk.Button(frame2, borderwidth=4, text="Deskargatu", width=10, pady=8, command=download_files)
-button4.pack(padx=2, pady=2)
-button5 = tk.Button(frame2, borderwidth=4, text="Datuak", width=10, pady=8, command=show_metadata)
-button5.pack(padx=2, pady=2)
-button6 = tk.Button(frame2, borderwidth=4, text="Mugitu", width=10, pady=8, command=move_file)
-button6.pack(padx=2, pady=2)
-button7 = tk.Button(frame2, borderwidth=4, text="Izena aldatu", width=10, pady=8, command=rename_file)
-button7.pack(padx=2, pady=2)
-frame2.grid(column=3, row=1, ipadx=10, ipady=10)
+frame2.grid(row=1, column=3,  ipadx=10, ipady=10)
 
 for each in pdfs:
-    msg_listbox1.insert(tk.END, each['pdf_name'])
+    msg_listbox1.insert(tk.END, each)
     msg_listbox1.yview(tk.END)
 
 dropbox.list_folder(msg_listbox2)

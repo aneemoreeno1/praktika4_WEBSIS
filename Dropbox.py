@@ -25,7 +25,6 @@ server_addr = "localhost"
 server_port  = 8090
 redirect_uri = "http://" + server_addr + ":" + str(server_port)
 
-
 class Dropbox:
     _access_token = ""
     _path  = "/"
