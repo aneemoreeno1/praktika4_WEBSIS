@@ -19,8 +19,8 @@ def _crear_sesion_con_reintentos():
 
 _sesion_dropbox = _crear_sesion_con_reintentos()
 
-app_key    = 'np3zn4jlp5gbp73'
-app_secret = 'cn16mx5lmtujfx5'
+app_key    = 'za133tgnclh7qh1'
+app_secret = 'd2igskf8u3hmy8d'
 server_addr = "localhost"
 server_port  = 8090
 redirect_uri = "http://" + server_addr + ":" + str(server_port)
@@ -101,8 +101,8 @@ class Dropbox:
         self._access_token = datos_json['access_token']
         print(f"\taccess_token obtenido: {self._access_token[:10]}...")
 
-        self._root.destroy()
-
+        #self._root.destroy()
+        
     # ------------------------------------------------------------------ #
     #  Listar contenido de la carpeta actual                              #
     # ------------------------------------------------------------------ #
@@ -122,6 +122,9 @@ class Dropbox:
             headers=cabeceras,
             json=cuerpo
         )
+        print("STATUS:", respuesta.status_code)
+        print("HEADERS:", respuesta.headers)
+        print("BODY:", respuesta.text)
         datos_json = respuesta.json()
         print(f"\tEntradas recibidas: {len(datos_json.get('entries', []))}")
 
@@ -144,8 +147,12 @@ class Dropbox:
     # ------------------------------------------------------------------ #
     #  Subir un fichero a Dropbox                                         #
     # ------------------------------------------------------------------ #
-    def transfer_file(self, file_path, file_data):
-        print("/upload " + file_path)
+    def transfer_file(self, file):
+        file_path = f"/{file}"
+
+        with open(file, "rb") as f:
+            file_data = f.read()
+
         argumentos_api = {
             "path":            file_path,
             "mode":            "add",
@@ -186,11 +193,12 @@ class Dropbox:
     # ------------------------------------------------------------------ #
     #  Crear una carpeta en Dropbox                                       #
     # ------------------------------------------------------------------ #
-    def create_folder(self, path):
+    def create_folder(self, name):
+        path = f"/{name}"
         print("/create_folder_v2 " + path)
         cabeceras = {
             "Authorization": "Bearer " + self._access_token,
-            "Content-Type":  "application/json"
+            "Content-Type":  "application/json" 
         }
 
         respuesta = requests.post(
@@ -199,6 +207,9 @@ class Dropbox:
             json={"path": path, "autorename": False}
         )
         print(f"\tCarpeta creada: {respuesta.status_code}")
+        print("STATUS:", respuesta.status_code)
+        print("HEADERS:", respuesta.headers)
+        print("BODY:", respuesta.text)
 
     # ------------------------------------------------------------------ #
     #  Descargar un fichero de Dropbox al disco local                     #
