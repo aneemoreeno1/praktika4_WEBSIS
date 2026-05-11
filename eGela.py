@@ -205,7 +205,7 @@ class eGela:
         print("\n##### Analisis del HTML... #####")
 
         #############################################
-        # PDF BILAKETA
+        # PDF BUSQUEDA
         #############################################
         pdfs = soup.find_all('li', class_='modtype_resource')
 
@@ -255,39 +255,65 @@ class eGela:
         print("\t##### descargando  PDF... #####")
 
         #############################################
-        # HAUTATUTAKO PDF-AK DESKARGATUKO DITUGU
+        # DESCARGAR PDFS SELECCIONADOS
         #############################################
 
-        pdf_url = self._refs[selection]
+        pdf_url = self._refs.get(selection)
+        if not pdf_url:
+            raise Exception("Referencia al PDF no encontrada")
+
+        if self._cookie:
+            self._session.cookies.update({'MoodleSessionegela': self._cookie})
 
         headers = {
-            'Cookie': f'MoodleSessionegela={self._cookie}'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                          '(KHTML, like Gecko) Chrome/115.0 Safari/537.36',
+            'Referer': self._curso if self._curso else pdf_url
         }
 
-        # Eskaera bat
-        response = requests.get(
-            pdf_url,
-            headers=headers,
-            allow_redirects=False
-        )
+        last_exc = None
+        for intento in range(3):
+            try:
+                response = self._session.get(pdf_url, headers=headers, allow_redirects=True, timeout=30)
+            except requests.RequestException as exc:
+                last_exc = exc
+                print(f"\tIntento {intento+1}: error de red: {exc}")
+                time.sleep(1)
+                continue
 
-        if response.status_code not in [200, 302]:
-            raise Exception("Error descargando el PDF")
+            try:
+                print(f"\tIntento {intento+1}: URL final: {response.url}")
+                print(f"\tIntento {intento+1}: estado HTTP {response.status_code}")
+                if response.history:
+                    print(f"\tHistorial ({len(response.history)} redirecciones):")
+                    for h in response.history:
+                        print(f"\t - {h.status_code} -> {h.url}")
+            except Exception:
+                pass
 
-        if 'Location' in response.headers:
+            if response.status_code != 200:
+                last_exc = Exception(f"HTTP {response.status_code}")
+                time.sleep(1)
+                continue
 
-            download_url = response.headers['Location']
-
-            pdf_response = requests.get(
-                download_url,
-                headers=headers
-            )
-
-            pdf_content = pdf_response.content
-
-        else:
             pdf_content = response.content
+            if not pdf_content:
+                last_exc = Exception("Contenido vacío al descargar PDF")
+                time.sleep(1)
+                continue
 
-        pdf_name = selection.replace('/', '_') + ".pdf"
+            # Mostrar Content-Type para ayudar a depuración
+            try:
+                print(f"\tContent-Type: {response.headers.get('Content-Type')}")
+            except Exception:
+                pass
 
-        return pdf_name, pdf_content
+            pdf_name = selection.replace('/', '_') + ".pdf"
+            return pdf_name, pdf_content
+
+        # Si fallaron los intentos
+        if last_exc:
+            raise Exception(f"Error descargando el PDF: {last_exc}")
+        else:
+            raise Exception("Error desconocido descargando el PDF")
+

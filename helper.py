@@ -42,8 +42,8 @@ def update_listbox2(msg_listbox, path, edukia_json):
     files = []
     if path != '/':
         files.append({'id': 'parent',
-                            'name': "..",
-                            '.tag': "folder"})
+                      'name': "..",
+                      '.tag': "folder"})
         msg_listbox.insert(tk.END, "..")
         msg_listbox.itemconfigure(tk.END, background="#C6185C")
 
@@ -52,6 +52,6 @@ def update_listbox2(msg_listbox, path, edukia_json):
         if each['.tag'] == "folder":
             msg_listbox.itemconfigure(tk.END, background="#7C86FF")
         files.append({'id': each['id'],
-                            'name': each['name'],
-                            '.tag': each['.tag']})
+                      'name': each['name'],
+                      '.tag': each['.tag']})
     return files

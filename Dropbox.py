@@ -1,6 +1,7 @@
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+import os
 import urllib.parse
 import webbrowser
 import json
@@ -19,8 +20,8 @@ def _crear_sesion_con_reintentos():
 
 _sesion_dropbox = _crear_sesion_con_reintentos()
 
-app_key    = 'za133tgnclh7qh1'
-app_secret = 'd2igskf8u3hmy8d'
+app_key    = 'dqhsms7e51u54i5'
+app_secret = '9wyalez8fy812m3'
 server_addr = "localhost"
 server_port  = 8090
 redirect_uri = "http://" + server_addr + ":" + str(server_port)
@@ -101,7 +102,7 @@ class Dropbox:
         self._access_token = datos_json['access_token']
         print(f"\taccess_token obtenido: {self._access_token[:10]}...")
 
-        #self._root.destroy()
+        self._root.destroy()
         
     # ------------------------------------------------------------------ #
     #  Listar contenido de la carpeta actual                              #
@@ -147,14 +148,16 @@ class Dropbox:
     # ------------------------------------------------------------------ #
     #  Subir un fichero a Dropbox                                         #
     # ------------------------------------------------------------------ #
-    def transfer_file(self, file):
-        file_path = f"/{file}"
-
-        with open(file, "rb") as f:
-            file_data = f.read()
+    def transfer_file(self, file_path, file_data=None):
+        if file_data is None:
+            with open(file_path, "rb") as f:
+                file_data = f.read()
+            remote_path = f"/{os.path.basename(file_path)}"
+        else:
+            remote_path = file_path if file_path.startswith("/") else f"/{file_path}"
 
         argumentos_api = {
-            "path":            file_path,
+            "path":            remote_path,
             "mode":            "add",
             "autorename":      True,
             "mute":            False,
@@ -216,6 +219,11 @@ class Dropbox:
     # ------------------------------------------------------------------ #
     def download_file(self, file_path, destination_path):
         print("/download " + file_path)
+        downloads_dir = "downloads"
+        if not os.path.exists(downloads_dir):
+            os.makedirs(downloads_dir)
+        destination_path = os.path.join(downloads_dir, destination_path)
+
         cabeceras = {
             "Authorization":   "Bearer " + self._access_token,
             "Dropbox-API-Arg": json.dumps({"path": file_path})
@@ -231,7 +239,7 @@ class Dropbox:
             if respuesta.status_code == 200:
                 with open(destination_path, 'wb') as fichero:
                     fichero.write(respuesta.content)
-                print(f"\tFichero guardado en: {destination_path}")
+                print(f"\tFichero guardado en: {os.path.abspath(destination_path)}")
             else:
                 print(f"\tError en descarga ({respuesta.status_code}): {respuesta.text}")
         except requests.exceptions.ConnectTimeout:
@@ -257,8 +265,10 @@ class Dropbox:
         if respuesta.status_code == 200:
             metadatos = respuesta.json()
             print(json.dumps(metadatos, indent=2))
+            return metadatos
         else:
             print(f"\tError al obtener metadatos: {respuesta.text}")
+            return None
 
     # ------------------------------------------------------------------ #
     #  Mover un fichero a otra ruta                                       #

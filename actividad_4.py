@@ -1,5 +1,7 @@
 import tkinter as tk
+from tkinter import messagebox
 import os
+import json
 import eGela
 import Dropbox
 import helper
@@ -57,15 +59,29 @@ def make_listbox(messages_frame):
     return msg_listbox
 
 def transfer_files():
+    if not selected_items1:
+        return
     popup, progress_var, progress_bar = helper.progress("transfer_file", "Transfering files...")
     progress = 0
     progress_var.set(progress)
     progress_bar.update()
     progress_step = float(100.0 / len(selected_items1))
+    pdf_names = list(pdfs.keys())
 
     for each in selected_items1:
-        pdf_name, pdf_file = egela.get_pdf(pdfs[each])
-        
+        pdf_key = pdf_names[each]
+        try:
+            pdf_name, pdf_file = egela.get_pdf(pdf_key)
+        except Exception as exc:
+            # Mostrar error y continuar con el siguiente fichero
+            message = f"Error descargando '{pdf_key}': {exc}"
+            print(message)
+            try:
+                messagebox.showerror("Error", message)
+            except Exception:
+                pass
+            continue
+
         progress_bar.update()
         newroot.update()
 
@@ -89,6 +105,8 @@ def transfer_files():
     msg_listbox2.yview(tk.END)
 
 def delete_files():
+    if not selected_items2:
+        return
     popup, progress_var, progress_bar = helper.progress("delete_file", "Deleting files...")
     progress = 0
     progress_var.set(progress)
@@ -141,6 +159,8 @@ def create_folder():
 
 ##########################################################################################################
 def download_files():
+    if not selected_items2:
+        return
     for each in selected_items2:
         selected_file = dropbox._files[each]
         if selected_file['.tag'] == 'file':
@@ -149,13 +169,48 @@ def download_files():
             dropbox.download_file(file_path, destination_path)
 
 def show_metadata():
+    if not selected_items2:
+        return
+
+    metadata_blocks = []
     for each in selected_items2:
         selected_file = dropbox._files[each]
         if selected_file['.tag'] == 'file':
             file_path = dropbox._path + '/' + selected_file['name'] if dropbox._path != "/" else '/' + selected_file['name']
-            dropbox.get_file_metadata(file_path)
+            metadata = dropbox.get_file_metadata(file_path)
+            if metadata:
+                metadata_blocks.append((file_path, metadata))
+
+    if metadata_blocks:
+        show_metadata_popup(metadata_blocks)
+
+def show_metadata_popup(metadata_blocks):
+    popup = tk.Toplevel(newroot)
+    popup.geometry('700x420')
+    popup.title('Dropbox metadata')
+    popup.iconbitmap('./favicon.ico')
+    helper.center(popup)
+
+    frame = tk.Frame(popup, padx=10, pady=10)
+    frame.pack(fill=tk.BOTH, expand=True)
+
+    scrollbar = tk.Scrollbar(frame)
+    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+    text = tk.Text(frame, wrap=tk.WORD, yscrollcommand=scrollbar.set)
+    text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+    scrollbar.config(command=text.yview)
+
+    for file_path, metadata in metadata_blocks:
+        text.insert(tk.END, f"Ruta: {file_path}\n")
+        text.insert(tk.END, json.dumps(metadata, indent=2, ensure_ascii=False))
+        text.insert(tk.END, "\n\n" + "-" * 70 + "\n\n")
+
+    text.config(state=tk.DISABLED)
 
 def move_file():
+    if not selected_items2:
+        return
     for each in selected_items2:
         selected_file = dropbox._files[each]
         if selected_file['.tag'] == 'file':
@@ -164,6 +219,8 @@ def move_file():
             dropbox.list_folder(msg_listbox2)
 
 def rename_file():
+    if not selected_items2:
+        return
     for each in selected_items2:
         selected_file = dropbox._files[each]
         if selected_file['.tag'] == 'file':
@@ -313,6 +370,14 @@ button2 = tk.Button(frame2, borderwidth=4,  background="#C6185C",fg="white", tex
 button2.pack(padx=2, pady=2)
 button3 = tk.Button(frame2, borderwidth=4, background="#7C86FF",fg="white", text="Create folder", width=10, pady=8, command=create_folder)
 button3.pack(padx=2, pady=2)
+button4 = tk.Button(frame2, borderwidth=4, background="#BEE1E6",fg="white", text="Move file", width=10, pady=8, command=move_file)
+button4.pack(padx=2, pady=2)
+button5 = tk.Button(frame2, borderwidth=4, background="#E2ECE9",fg="white", text="Rename file", width=10, pady=8, command=rename_file)
+button5.pack(padx=2, pady=2)
+button6 = tk.Button(frame2, borderwidth=4, background="#CCE2CB",fg="white", text="Download file", width=10, pady=8, command=download_files)
+button6.pack(padx=2, pady=2)
+button7 = tk.Button(frame2, borderwidth=4, background="#ABDEE6",fg="white", text="Show metadata", width=10, pady=8, command=show_metadata)
+button7.pack(padx=2, pady=2)
 frame2.grid(row=1, column=3,  ipadx=10, ipady=10)
 
 for each in pdfs:
